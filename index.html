@@ -1,0 +1,143 @@
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.css" integrity="sha256-zKA1Bf41O96+gJSlkn/Bh2HATW/OhwkApPlYTp3B5O8=" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+  </head>
+<body>
+<div id="app">
+  <div class="has-background-grey-dark">
+	<button class="button is-black" title="Setings" @click="settings.disply = !settings.disply"><span class="icon"><i class="fa fa-cog"></i></span></button>
+	<span id="status" class="tag is-warning">Not connected</span>
+	<div class="container" v-if="settings.disply">
+		<div class="field is-horizontal">
+			<div class="field-label is-normal">
+				<label class="label has-text-grey-light">Channel:</label>
+			</div>
+			<div class="field-body">
+				<div class="field">
+					<p class="control">
+					<input class="input has-text-gray" type="text" tabindex="1" placeholder="Your channel name" v-model="settings.channel">
+					</p>
+				</div>
+				<button class="button is-info" title="Info" @click="settings.channelInfoShow = !settings.channelInfoShow"><span class="icon"><i class="fas fa-info-circle"></i></span></button>
+			</div>
+		</div>
+		<div class="notification" v-if="settings.channelInfoShow">This is for your Twitch channel name.</div>
+
+
+		<div class="field is-horizontal">
+		  <div class="field-label is-normal">
+			<label class="label has-text-grey-light">User:</label>
+		  </div>
+		  <div class="field-body">
+			<div class="field">
+			  <p class="control">
+				<input class="input is-primary" type="text" tabindex="2" placeholder="Mesaage delivery account name, bot for example" v-model="settings.user">
+			  </p>
+			</div>
+		  <button class="button is-info" title="Info" @click="settings.userInfoShow = !settings.userInfoShow"><span class="icon"><i class="fas fa-info-circle"></i></span></button>
+		  </div>
+		</div>
+		<div class="notification" v-if="settings.userInfoShow">Twitch user name, the one that will be delivering the messages. Use ether your channel bot or your own account.</div>
+
+		<div class="field is-horizontal">
+		  <div class="field-label is-normal">
+			<label class="label has-text-grey-light">OAuth token:</label>
+		  </div>
+		  <div class="field-body">
+			<div class="field">
+			  <p class="control">
+				<input class="input is-primary" type="text" tabindex="3" placeholder="OAUTH TOKEN" v-model="settings.OAUTH_TOKEN">
+			  </p>
+			</div>
+		  <button class="button is-info" title="Info" @click="settings.OAUTH_TOKENInfoShow = !settings.OAUTH_TOKENInfoShow"><span class="icon"><i class="fas fa-info-circle"></i></span></button>
+		  </div>
+		</div>
+		<div class="notification" v-if="settings.OAUTH_TOKENInfoShow">
+		OAUTH token - used to connect to Twitch chat. Looks something like this: oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx <br>
+		To get one you can visit <a href="https://twitchapps.com/tmi/" target="_blank">https://twitchapps.com/tmi/</a> <br>
+		Also keep in mind your bot might be already using one and generating a new token may cause problems with your bot.
+		</div>
+    <div class="notification">
+    This is just a demo to show my vision of a tool to aid streamer notice people in their chat and shoutout streamers.
+    </div>
+		<button class="button is-black" title="Connect" tabindex="5" @click="connect()">Connect</button>
+		<button class="button is-black" title="Clear the data" @click="clear()">Clear</button>
+	</div>
+	<br>
+  </div>
+  <br>
+  <div class="columns">
+  	<div class="column is-two-thirds">
+  		<div class="field is-horizontal">
+  			<div class="field-label is-normal">
+  				<label class="label">Shoutout message:</label>
+  			</div>
+  			<div class="field-body">
+  				<div class="field">
+  				<p class="control">
+  					<input class="input is-primary" type="text" tabindex="5" placeholder="Type !join in chat to join." v-model="message">
+  				</p>
+  				</div>
+  			</div>
+  		</div>
+  		<table class="table">
+  		  <thead>
+  			<tr>
+  			  <th><abbr title="Position">Pos</abbr></th>
+  			  <th><abbr title="Username">Username</abbr></th>
+  			  <th><abbr title="Time since first message">Time</abbr></th>
+          <th><abbr title="Special in any kind">Status</abbr></th>
+  			  <th><abbr title="Channel views just for no real reason">Views</abbr></th>
+  			</tr>
+  		  </thead>
+  		  <tbody>
+  			<tr v-for="(item, index) in usersQueued">
+  			  <th>{{index + 1}}</th>
+  			  <td>{{item.name}}</td>
+  			  <td>{{timeSince(item.time)}}</td>
+          <td>{{item.type}}</td>
+          <td>{{item.views}}</td>
+  			  <td>
+  				<button :class="(item.messageSent) ? ('button is-gray') : ('button is-primary')" :title="(item.messageSent) ? ('Shoutout sent') : ('Shoutout')" @click="doShoutout(index)"><span class="icon"><i class="fas fa-bullhorn"></i></span></button>
+  				<button class="button is-success" title="To be thanked later" @click="joinedGame(index)"><span class="icon"><i class="fas fa-angle-right"></i></span></button>
+  				<button class="button is-primary" title="Noticed" @click="removeItem(index)"><span class="icon"><i class="fas fa-eye"></i></span></button>
+  			  </td>
+  			</tr>
+  			<tr>
+  		  </tbody>
+  		</table>
+  	</div>
+    <div class="column">
+      <div class="container">
+        <div class="field">
+          <label class="label">People seen and acknowledged</label>
+        </div>
+        <table class="table">
+          <thead>
+          <tr>
+            <th><abbr title="Username">Username</abbr></th>
+            <th><abbr title="Special">Status</abbr></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr v-for="(item, index) in usersInGame">
+            <td>{{item.name}}</td>
+            <td>{{item.type}}</td>
+            <td>
+              <button :class="(item.messageSent) ? ('button is-gray') : ('button is-primary')" :title="(item.messageSent) ? ('Shoutout sent') : ('Shoutout again')" @click="doShoutoutAgain(index)"><span class="icon"><i class="fas fa-bullhorn"></i></span></button>
+              <button class="button is-danger" title="Remove" @click="moveGameToPlayed(index)"><span class="icon"><i class="fas fa-angle-right"></i></span></button>
+            </td>
+            </td>
+          </tr>
+          <tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+  <script src="app.js"></script>
+</body>
+</html>
